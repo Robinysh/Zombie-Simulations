@@ -107,9 +107,11 @@ class GameState:
     def updateHumansVelocities(self):
         list_of_near_zombies = self.humans.kd_tree.query_ball_tree(self.zombies.kd_tree, self.humans.view_distance)
         for i, (human_position, zombies_indicies) in enumerate(zip(self.humans.position, list_of_near_zombies)):
-            if len(zombies_indicies) != 0:
-                vectors = self.zombies.position[zombies_indicies] - human_position
-                self.humans.velocity[i] = np.mean(vectors/(np.sum(vectors**2,axis=1)**(3/2.))[:,np.newaxis], axis=0)
+            if len(zombies_indicies) != 0: #Try removing if, for branch prediction optimization
+                position_vectors = self.zombies.position[zombies_indicies] - human_position
+                distances = np.sum(position_vectors**2,axis=1) 
+                force_vectors = position_vectors/(distances**(3/2.))[:,np.newaxis] #Division applied along axis=0
+                self.humans.velocity[i] = np.mean(force_vectors, axis=0)
             else:
                 self.humans.velocity[i] = 0
         self.humans.velocity *= -self.humans.max_speed
